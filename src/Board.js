@@ -21,6 +21,53 @@ export default class Board extends React.Component {
       complete: React.createRef(),
     }
   }
+  componentDidMount() {
+    this.drake = Dragula([
+      this.swimlanes.backlog.current,
+      this.swimlanes.inProgress.current,
+      this.swimlanes.complete.current,
+    ]);
+
+    this.drake.on("drop", (el, target, source, sibling) => {
+      const value = target.attributes[1].value;
+      const id = el.getAttribute("data-id");
+      this.handleState(value, id, source, sibling);
+
+      return;
+    });
+  }
+  handleState(value, id, source, sibling) {
+    this.drake.cancel(true);
+    const oldClients = [
+      ...this.state.clients.backlog,
+      ...this.state.clients.inProgress,
+      ...this.state.clients.complete,
+    ];
+
+    const selected = oldClients.filter(task => task.id === id).map(task => ({ ...task, status: value }));
+
+    const remainingClients = oldClients.filter(task => task.id !== id);
+
+    // Find sibling index
+    const siblingIndex = sibling ? remainingClients.findIndex(task => task.id === sibling.dataset.id) : -1;
+
+    if (siblingIndex === -1) {
+      remainingClients.push(selected[0]);
+    } else {
+      remainingClients.splice(siblingIndex, 0, selected[0]);
+    }
+
+    // Update state
+    const newState = {
+      clients: {
+        backlog: remainingClients.filter(client => !client.status || client.status === "backlog"),
+        inProgress: remainingClients.filter(client => client.status === "in-progress"),
+        complete: remainingClients.filter(client => client.status === "complete"),
+      },
+    };
+
+    this.setState(prevState => ({ ...prevState, ...newState }));
+  }
   getClients() {
     return [
       ['1','Stark, White and Abbott','Cloned Optimal Architecture', 'in-progress'],
