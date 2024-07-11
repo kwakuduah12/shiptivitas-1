@@ -22,11 +22,15 @@ export default class Board extends React.Component {
     }
   }
   componentDidMount() {
-    this.drake = Dragula([
-      this.swimlanes.backlog.current,
-      this.swimlanes.inProgress.current,
-      this.swimlanes.complete.current,
-    ]);
+
+    this.drake.on("drop", (el, target, source, sibling) => {
+      const value = target.attributes[1].value;
+      const id = el.getAttribute("data-id");
+      this.handleState(value, id, source, sibling);
+
+      return;
+    });
+  }
 
     this.drake.on("drop", (el, target, source, sibling) => {
       const value = target.attributes[1].value;
